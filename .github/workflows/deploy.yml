@@ -16,36 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assume AWS role via OIDC (manual)
-        run: |
-          OIDC_TOKEN=$(curl -s \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['value'])")
-
-          echo "=== Token Claims ==="
-          echo "$OIDC_TOKEN" | python3 -c "import sys,json,base64; t=sys.stdin.read().strip().split('.'); p=t[1]+'='*(-len(t[1])%4); print(json.dumps(json.loads(base64.b64decode(p)),indent=2))"
-
-          CREDS=$(aws sts assume-role-with-web-identity \
-            --role-arn "${{ vars.AWS_ROLE_ARN }}" \
-            --role-session-name github-actions-deploy \
-            --web-identity-token "$OIDC_TOKEN" \
-            --duration-seconds 3600 \
-            --query Credentials \
-            --output json)
-
-          ACCESS_KEY=$(echo "$CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['AccessKeyId'])")
-          SECRET_KEY=$(echo "$CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['SecretAccessKey'])")
-          SESSION_TOKEN=$(echo "$CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['SessionToken'])")
-
-          echo "::add-mask::$ACCESS_KEY"
-          echo "::add-mask::$SECRET_KEY"
-          echo "::add-mask::$SESSION_TOKEN"
-
-          echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$SECRET_KEY" >> $GITHUB_ENV
-          echo "AWS_SESSION_TOKEN=$SESSION_TOKEN" >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=${{ vars.AWS_REGION }}" >> $GITHUB_ENV
+      - name: Configure AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
