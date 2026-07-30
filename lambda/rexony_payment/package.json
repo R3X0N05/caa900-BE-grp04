@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3",
+    "stripe": "^14"
+  }
+}
