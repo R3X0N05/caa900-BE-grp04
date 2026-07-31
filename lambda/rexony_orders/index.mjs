@@ -159,6 +159,24 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: H, body: JSON.stringify({ success: true }) };
     }
 
+    // ─── Contact form ───────────────────────────────────────────────────────────
+    if (method === "POST" && path === "/contact") {
+      const { name, email, subject, message } = body;
+      if (!name || !email || !message) {
+        return { statusCode: 400, headers: H, body: JSON.stringify({ message: "Missing required fields" }) };
+      }
+      await ses.send(new SendEmailCommand({
+        Source: FROM_EMAIL,
+        Destination: { ToAddresses: [FROM_EMAIL] },
+        Message: {
+          Subject: { Data: `[Rexony Contact] ${subject || "No Subject"}` },
+          Body: { Text: { Data: `From: ${name} <${email}>\n\n${message}` } }
+        }
+      }));
+      return { statusCode: 200, headers: H, body: JSON.stringify({ message: "Message sent" }) };
+    }
+    // ───────────────────────────────────────────────────────────────────────────
+
     return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Not found", method, path }) };
 
   } catch (err) {
