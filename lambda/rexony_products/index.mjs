@@ -60,6 +60,34 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
     }
 
+    // PUT /admin/product/{id} — update product fields (name, price, featured, etc.)
+    if (method === "PUT" && path.startsWith("/admin/product/") && id) {
+      const updates = [];
+      const values  = {};
+      const names   = {};
+
+      if (body.featured  !== undefined) { updates.push("#featured = :featured");   names["#featured"]  = "featured";    values[":featured"]  = body.featured; }
+      if (body.name      !== undefined) { updates.push("#name = :name");           names["#name"]      = "name";        values[":name"]      = body.name; }
+      if (body.price     !== undefined) { updates.push("price = :price");                                               values[":price"]     = body.price; }
+      if (body.description !== undefined) { updates.push("description = :desc");                                        values[":desc"]      = body.description; }
+      if (body.category  !== undefined) { updates.push("category = :category");                                         values[":category"]  = body.category; }
+      if (body.Stock     !== undefined) { updates.push("Stock = :stock");                                               values[":stock"]     = body.Stock; }
+      if (body.image     !== undefined) { updates.push("image = :image");                                               values[":image"]     = body.image; }
+
+      if (updates.length === 0) return { statusCode: 400, headers: H, body: JSON.stringify({ message: "No fields to update" }) };
+
+      await db.send(new UpdateCommand({
+        TableName: TABLE,
+        Key: { productId: id },
+        UpdateExpression: `SET ${updates.join(", ")}`,
+        ExpressionAttributeNames: Object.keys(names).length ? names : undefined,
+        ExpressionAttributeValues: values
+      }));
+
+      const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { productId: id } }));
+      return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
+    }
+
     // GET /reviews?id={productId}
     if (method === "GET" && path === "/reviews") {
       const pid = event.queryStringParameters?.id;
@@ -154,13 +182,6 @@ export const handler = async (event) => {
     if (method === "DELETE" && path.startsWith("/admin/product/") && id) {
       await db.send(new DeleteCommand({ TableName: TABLE, Key: { productId: id } }));
       return { statusCode: 200, headers: H, body: JSON.stringify({ success: true }) };
-    }
-
-    // GET /admin/product/{id}
-    if (method === "GET" && path.startsWith("/admin/product/") && id) {
-      const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { productId: id } }));
-      if (!Item) return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Product not found" }) };
-      return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
     }
 
     return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Not found", method, path }) };
