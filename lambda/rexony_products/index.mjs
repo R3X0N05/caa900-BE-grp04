@@ -156,6 +156,13 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: H, body: JSON.stringify({ success: true }) };
     }
 
+    // GET /admin/product/{id}
+    if (method === "GET" && path.startsWith("/admin/product/") && id) {
+      const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { productId: id } }));
+      if (!Item) return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Product not found" }) };
+      return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
+    }
+
     return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Not found", method, path }) };
 
   } catch (err) {
