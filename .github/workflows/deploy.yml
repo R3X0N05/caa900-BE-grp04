@@ -31,7 +31,7 @@ jobs:
       - name: Install & deploy rexony-orders
         working-directory: lambda/rexony_orders
         run: |
-          npm ci
+          npm install
           zip -r ../../orders.zip .
           aws lambda update-function-code \
             --function-name rexony-orders \
@@ -40,7 +40,7 @@ jobs:
       - name: Install & deploy rexony-payment
         working-directory: lambda/rexony_payment
         run: |
-          npm ci
+          npm install
           zip -r ../../payment.zip .
           aws lambda update-function-code \
             --function-name rexony-payment \
