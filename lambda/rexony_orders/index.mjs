@@ -162,19 +162,84 @@ export const handler = async (event) => {
     // ─── Contact form ───────────────────────────────────────────────────────────
     if (method === "POST" && path === "/contact") {
       const { name, email, subject, message } = body;
-      if (!name || !email || !message) {
-        return { statusCode: 400, headers: H, body: JSON.stringify({ message: "Missing required fields" }) };
-      }
-      await ses.send(new SendEmailCommand({
-        Source: FROM_EMAIL,
-        Destination: { ToAddresses: [FROM_EMAIL] },
-        Message: {
-          Subject: { Data: `[Rexony Contact] ${subject || "No Subject"}` },
-          Body: { Text: { Data: `From: ${name} <${email}>\n\n${message}` } }
-        }
-      }));
-      return { statusCode: 200, headers: H, body: JSON.stringify({ message: "Message sent" }) };
+    if (!name || !email || !message) {
+      return { statusCode: 400, headers: H, body: JSON.stringify({ message: "Missing required fields" }) };
     }
+    await ses.send(new SendEmailCommand({
+      Source: FROM_EMAIL,
+      Destination: { ToAddresses: [FROM_EMAIL] },
+      Message: {
+        Subject: { Data: `[Rexony Contact] ${subject || "No Subject"}` },
+        Body: {
+          Html: {
+            Data: `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            
+            <!-- Header -->
+            <tr>
+              <td style="background:#1a1a2e;padding:32px 40px;text-align:center;">
+                <h1 style="margin:0;color:#e94560;font-size:28px;letter-spacing:2px;">REXONY</h1>
+                <p style="margin:6px 0 0;color:#aaa;font-size:13px;">New Contact Form Submission</p>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:40px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  
+                  <tr>
+                    <td style="padding-bottom:24px;border-bottom:1px solid #eee;">
+                      <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">From</p>
+                      <p style="margin:6px 0 0;font-size:16px;color:#1a1a2e;font-weight:bold;">${name}</p>
+                      <p style="margin:2px 0 0;font-size:14px;color:#e94560;">${email}</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:24px 0;border-bottom:1px solid #eee;">
+                      <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Subject</p>
+                      <p style="margin:6px 0 0;font-size:16px;color:#1a1a2e;font-weight:bold;">${subject || "No Subject"}</p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding-top:24px;">
+                      <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Message</p>
+                      <p style="margin:12px 0 0;font-size:15px;color:#333;line-height:1.7;white-space:pre-wrap;">${message}</p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f9f9f9;padding:20px 40px;text-align:center;border-top:1px solid #eee;">
+                <p style="margin:0;font-size:12px;color:#aaa;">This message was sent via the Rexony contact form.</p>
+                <p style="margin:4px 0 0;font-size:12px;color:#aaa;">Reply directly to <a href="mailto:${email}" style="color:#e94560;">${email}</a> to respond.</p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>`
+          },
+          Text: { Data: `From: ${name} <${email}>\nSubject: ${subject || "No Subject"}\n\n${message}` }
+        }
+      }
+    }));
+    return { statusCode: 200, headers: H, body: JSON.stringify({ message: "Message sent" }) };
+  }
     // ───────────────────────────────────────────────────────────────────────────
 
     return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Not found", method, path }) };
