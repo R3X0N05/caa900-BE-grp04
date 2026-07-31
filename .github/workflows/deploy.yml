@@ -46,6 +46,42 @@ jobs:
             --function-name rexony-payment \
             --zip-file fileb://../../payment.zip
 
+      - name: Install & deploy rexony-products
+        working-directory: lambda/rexony_products
+        run: |
+          npm install
+          zip -r ../../products.zip .
+          aws lambda update-function-code \
+            --function-name rexony-products \
+            --zip-file fileb://../../products.zip
+
+      - name: Install & deploy rexony-cart
+        working-directory: lambda/rexony_cart
+        run: |
+          npm install
+          zip -r ../../cart.zip .
+          aws lambda update-function-code \
+            --function-name rexony-cart \
+            --zip-file fileb://../../cart.zip
+
+      - name: Install & deploy rexony-users
+        working-directory: lambda/rexony_users
+        run: |
+          npm install
+          zip -r ../../users.zip .
+          aws lambda update-function-code \
+            --function-name rexony-users \
+            --zip-file fileb://../../users.zip
+
+      - name: Install & deploy rexony-sns
+        working-directory: lambda/rexony_sns
+        run: |
+          npm install
+          zip -r ../../sns.zip .
+          aws lambda update-function-code \
+            --function-name rexony-sns \
+            --zip-file fileb://../../sns.zip
+
       - name: Smoke test - orders
         run: |
           STATUS=$(aws lambda invoke \
@@ -66,4 +102,26 @@ jobs:
             /tmp/out2.json \
             --query 'StatusCode' --output text)
           echo "Products Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Smoke test - cart
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-cart \
+            --payload '{"httpMethod":"GET","resource":"/cart","requestContext":{"authorizer":{"claims":{"sub":"ci-test"}}}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out3.json \
+            --query 'StatusCode' --output text)
+          echo "Cart Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Smoke test - users
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-users \
+            --payload '{"httpMethod":"GET","resource":"/admin/users","requestContext":{"authorizer":{"claims":{"sub":"ci-test"}}}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out4.json \
+            --query 'StatusCode' --output text)
+          echo "Users Lambda status: $STATUS"
           [ "$STATUS" = "200" ] || exit 1
