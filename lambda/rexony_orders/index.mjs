@@ -27,7 +27,6 @@ function decodeJWT(event) {
 }
 
 export const handler = async (event) => {
-  const { FROM_EMAIL } = await getSecrets();
   const method = event.httpMethod;
   const path   = event.resource;
   const id     = event.pathParameters?.id;
@@ -47,6 +46,8 @@ export const handler = async (event) => {
         body: ""
       };
     }
+
+    const { FROM_EMAIL } = await getSecrets();
 
     if (method === "POST" && path === "/order/new") {
       const jwt = decodeJWT(event);
@@ -159,6 +160,7 @@ export const handler = async (event) => {
     }
 
     return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Not found", method, path }) };
+
   } catch (err) {
     return { statusCode: 500, headers: H, body: JSON.stringify({ message: err.message }) };
   }

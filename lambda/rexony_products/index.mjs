@@ -53,6 +53,13 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
     }
 
+    // GET /admin/product/{id}
+    if (method === "GET" && path.startsWith("/admin/product/") && id) {
+      const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { productId: id } }));
+      if (!Item) return { statusCode: 404, headers: H, body: JSON.stringify({ message: "Product not found" }) };
+      return { statusCode: 200, headers: H, body: JSON.stringify({ product: Item }) };
+    }
+
     // GET /reviews?id={productId}
     if (method === "GET" && path === "/reviews") {
       const pid = event.queryStringParameters?.id;
@@ -62,7 +69,7 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: H, body: JSON.stringify({ reviews: Item.reviews || [] }) };
     }
 
-    // PUT /review  — submit a review (must have purchased the product)
+    // PUT /review
     if (method === "PUT" && path === "/review") {
       const payload = decodeJWT(event);
       if (!payload) return { statusCode: 401, headers: H, body: JSON.stringify({ message: "Unauthorized" }) };
@@ -109,7 +116,7 @@ export const handler = async (event) => {
       return { statusCode: 201, headers: H, body: JSON.stringify({ review }) };
     }
 
-    // DELETE /review  — admin deletes a review
+    // DELETE /review
     if (method === "DELETE" && path === "/review") {
       const payload = decodeJWT(event);
       if (!payload || payload["custom:role"] !== "admin") return { statusCode: 403, headers: H, body: JSON.stringify({ message: "Admin only" }) };
@@ -144,7 +151,7 @@ export const handler = async (event) => {
     }
 
     // DELETE /admin/product/{id}
-    if (method === "DELETE" && id) {
+    if (method === "DELETE" && path.startsWith("/admin/product/") && id) {
       await db.send(new DeleteCommand({ TableName: TABLE, Key: { productId: id } }));
       return { statusCode: 200, headers: H, body: JSON.stringify({ success: true }) };
     }
