@@ -1,0 +1,127 @@
+name: Deploy Backend (new-infra)
+
+on:
+  push:
+    branches: [new-infra]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Lambda Functions
+    runs-on: ubuntu-latest
+    environment: new-infra
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & deploy rexony-orders
+        working-directory: lambda/rexony_orders
+        run: |
+          npm install
+          zip -r ../../orders.zip .
+          aws lambda update-function-code \
+            --function-name rexony-orders \
+            --zip-file fileb://../../orders.zip
+
+      - name: Install & deploy rexony-payment
+        working-directory: lambda/rexony_payment
+        run: |
+          npm install
+          zip -r ../../payment.zip .
+          aws lambda update-function-code \
+            --function-name rexony-payment \
+            --zip-file fileb://../../payment.zip
+
+      - name: Install & deploy rexony-products
+        working-directory: lambda/rexony_products
+        run: |
+          npm install
+          zip -r ../../products.zip .
+          aws lambda update-function-code \
+            --function-name rexony-products \
+            --zip-file fileb://../../products.zip
+
+      - name: Install & deploy rexony-cart
+        working-directory: lambda/rexony_cart
+        run: |
+          npm install
+          zip -r ../../cart.zip .
+          aws lambda update-function-code \
+            --function-name rexony-cart \
+            --zip-file fileb://../../cart.zip
+
+      - name: Install & deploy rexony-users
+        working-directory: lambda/rexony_users
+        run: |
+          npm install
+          zip -r ../../users.zip .
+          aws lambda update-function-code \
+            --function-name rexony-users \
+            --zip-file fileb://../../users.zip
+
+      - name: Install & deploy rexony-sns
+        working-directory: lambda/rexony_sns
+        run: |
+          npm install
+          zip -r ../../sns.zip .
+          aws lambda update-function-code \
+            --function-name rexony-sns \
+            --zip-file fileb://../../sns.zip
+
+      - name: Smoke test - orders
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-orders \
+            --payload '{"httpMethod":"GET","resource":"/admin/orders","requestContext":{"authorizer":{"claims":{"sub":"ci-test"}}}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out.json \
+            --query 'StatusCode' --output text)
+          echo "Orders Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Smoke test - products
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-products \
+            --payload '{"httpMethod":"GET","resource":"/products","queryStringParameters":{}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out2.json \
+            --query 'StatusCode' --output text)
+          echo "Products Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Smoke test - cart
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-cart \
+            --payload '{"httpMethod":"GET","resource":"/cart","requestContext":{"authorizer":{"claims":{"sub":"ci-test"}}}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out3.json \
+            --query 'StatusCode' --output text)
+          echo "Cart Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+      - name: Smoke test - users
+        run: |
+          STATUS=$(aws lambda invoke \
+            --function-name rexony-users \
+            --payload '{"httpMethod":"GET","resource":"/admin/users","requestContext":{"authorizer":{"claims":{"sub":"ci-test"}}}}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/out4.json \
+            --query 'StatusCode' --output text)
+          echo "Users Lambda status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
