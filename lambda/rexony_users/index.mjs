@@ -21,7 +21,7 @@ function formatUser(u) {
     userId:    u.Username,
     name:      attrs.name || attrs["cognito:username"] || u.Username,
     email:     attrs.email || "",
-    role:      attrs["custom:role"] || "user",
+    role: attrs["custom:custom:role"] || "user",
     status:    u.UserStatus,
     createdAt: u.UserCreateDate,
   };
@@ -35,7 +35,7 @@ export const handler = async (event) => {
 
   const authHeader = event.headers?.Authorization || event.headers?.authorization || "";
   const claims = event.requestContext?.authorizer?.claims || parseJwt(authHeader);
-  const role   = claims?.["custom:role"] || claims?.role;
+  const role = claims?.["custom:custom:role"] || claims?.role;
 
   if (role !== "admin") return { statusCode: 403, headers: H, body: JSON.stringify({ message: "Forbidden" }) };
 
