@@ -4,6 +4,8 @@ import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-sec
 const sm = new SecretsManagerClient({ region: "us-east-1" });
 const H  = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://testtf.d1tgpr5ytlbee4.amplifyapp.com";
+
 let _secrets = null;
 async function getSecrets() {
   if (_secrets) return _secrets;
@@ -30,8 +32,8 @@ export const handler = async (event) => {
         },
         quantity: item.quantity,
       })),
-      success_url: "https://main.dijcvcdvudbc2.amplifyapp.com?payment=success",
-      cancel_url:  "https://main.dijcvcdvudbc2.amplifyapp.com?payment=cancelled",
+      success_url: `${FRONTEND_URL}?payment=success`,
+      cancel_url:  `${FRONTEND_URL}?payment=cancelled`,
     });
 
     return { statusCode: 200, headers: H, body: JSON.stringify({ url: session.url }) };
